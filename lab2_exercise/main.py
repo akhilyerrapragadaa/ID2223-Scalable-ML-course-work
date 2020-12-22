@@ -13,6 +13,7 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras import layers, models
 from pickle import dump,load
+from nltk.translate.bleu_score import corpus_bleu
 
 imagesSet = "/home/nanda/Scalable ML/lab2_exercise/dataset/Flicker8k_Dataset"
 allDescriptions = "/home/nanda/Scalable ML/lab2_exercise/dataset/Flickr8k.token.txt"
@@ -156,9 +157,7 @@ def trainingData(descriptions, trainFeat, tokenizer, maxLen):
 # Step 1: Uncomment below to initiate pre training and extract features from all images
  
 """
-
 CNN()
-
 """
 
 # Step 2: load all training descriptions, training features and available vocabulary 
@@ -195,14 +194,11 @@ model.compile(loss='categorical_crossentropy', optimizer='adam')
 # Step 4: Uncomment below to start training
 
 """
-
 generator = trainingData(fromAllDesc(), getFeatures(), getVocab(), getLength())
 model.fit(generator, epochs=18, steps_per_epoch=60, verbose=1)
-
 # Use Below to save trained models for different loss 
  
 #model.save('/home/nanda/Scalable ML/lab2_exercise/models/model_' +' '+ '.h5')
-
 """
 
 # Step 5: Test the trained model 
@@ -225,7 +221,7 @@ def getTestDesc(model, tokenizer, feat, maxLen):
 		if word == 'endseq':
 			break
 	return in_text
-
+"""
 for line in open(testImages, 'r').read().split('\n'):
 	print(line)
 	for name in listdir(imagesSet):
@@ -241,3 +237,30 @@ for line in open(testImages, 'r').read().split('\n'):
    
 			description = getTestDesc(trainedModel, tokenizer, feature, getLength())
 			print(description)
+
+
+"""
+def evaluate_model(model, descriptions, photos, tokenizer, max_length):
+	actual, predicted = list(), list()
+
+	for key, value in descriptions.items():
+
+		feat = getTestDesc(model, tokenizer, photos[key], max_length)
+
+		references = [d.split() for d in value]
+
+		#print("References: ",  references)
+
+		#print("Predicted: ", yhat)
+
+		actual.append(references)
+		predicted.append(feat.split())
+
+	print('BLEU-1: %f' % corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0)))
+	print('BLEU-2: %f' % corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0)))
+	print('BLEU-3: %f' % corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0)))
+	print('BLEU-4: %f' % corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))
+	
+
+
+evaluate_model(trainedModel, fromAllDesc(),getFeatures(), getVocab(), getLength())
